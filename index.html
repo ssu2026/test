@@ -74,24 +74,7 @@
   [data-theme="light"] .modal-backdrop {
     background: rgba(0,0,0,0.4);
   }
-  [data-theme="light"] .modal-close {
-    background: rgba(0,0,0,0.04);
-    border-color: rgba(0,0,0,0.07);
-    color: #999999;
-  }
-  [data-theme="light"] .modal-close:hover {
-    background: rgba(0,0,0,0.08);
-    color: #777777;
-  }
-  [data-theme="light"] .modal-slider-btn {
-    background: rgba(0,0,0,0.04);
-    border-color: rgba(0,0,0,0.07);
-    color: #999999;
-  }
-  [data-theme="light"] .modal-slider-btn:hover {
-    background: rgba(0,0,0,0.08);
-    color: #777777;
-  }
+
   [data-theme="light"] .mdot {
     background: rgba(0,0,0,0.15);
   }
@@ -952,6 +935,11 @@
     position: relative;
     z-index: 9001;
   }
+  .modal-slider-wrap {
+    border-radius: var(--radius) var(--radius) 0 0;
+    overflow: hidden;
+    position: relative;
+  }
   .modal-backdrop.open .modal { transform: scale(1) translateY(0); }
 
   .modal-slider-wrap { position: relative; overflow: hidden; }
@@ -975,37 +963,40 @@
     position: absolute;
     top: 12px; right: 12px;
     width: 32px; height: 32px;
-    background: rgba(10,10,15,0.75);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 50%;
+    background: none;
+    border: none;
+    border-radius: 0;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    font-size: 14px;
-    color: var(--text);
+    font-size: 16px;
+    color: rgba(255,255,255,0.5);
     z-index: 10;
-    transition: background 0.2s;
+    transition: color 0.2s;
   }
-  .modal-close:hover { background: rgba(255,255,255,0.15); }
+  .modal-close:hover { color: rgba(255,255,255,0.9); background: none; }
+  [data-theme="light"] .modal-close { color: rgba(0,0,0,0.35); }
+  [data-theme="light"] .modal-close:hover { color: rgba(0,0,0,0.7); background: none; }
 
   .modal-slider-btn {
     position: absolute;
-    top: 50%; transform: translateY(-50%);
+    top: 50%;
+    transform: translateY(-50%);
     width: 32px; height: 32px;
-    background: rgba(10,10,15,0.7);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 50%;
+    background: none;
+    border: none;
+    border-radius: 0;
     display: flex; align-items: center; justify-content: center;
-    color: var(--text);
-    font-size: 16px;
+    color: rgba(255,255,255,0.5);
+    font-size: 24px;
     cursor: pointer;
-    z-index: 2;
-    transition: background 0.2s;
+    z-index: 10;
+    transition: color 0.2s;
   }
-  .modal-slider-btn:hover { background: rgba(255,255,255,0.15); }
-  .modal-slider-btn.prev { left: 10px; }
-  .modal-slider-btn.next { right: 10px; }
+  .modal-slider-btn:hover { background: none; color: rgba(255,255,255,0.9); }
+  .modal-slider-btn.prev { left: 8px; }
+  .modal-slider-btn.next { right: 8px; }
+  [data-theme="light"] .modal-slider-btn { color: rgba(0,0,0,0.35); }
+  [data-theme="light"] .modal-slider-btn:hover { color: rgba(0,0,0,0.7); background: none; }
 
   .modal-dots {
     display: flex;
@@ -1561,14 +1552,10 @@
   <div class="modal">
     <div class="modal-slider-wrap">
       <div class="modal-close" onclick="closeModal()">✕</div>
-      <div class="modal-track" id="modalTrack">
-        <div class="modal-slide dummy1" style="background:linear-gradient(135deg,#FF3CAC22,#784BA044)">01</div>
-        <div class="modal-slide dummy2" style="background:linear-gradient(135deg,#00F5D422,#2B86C544)">02</div>
-        <div class="modal-slide dummy3" style="background:linear-gradient(135deg,#FFE45E22,#FF3CAC22)">03</div>
-      </div>
-      <button class="modal-slider-btn prev" onclick="slideModal(-1)">‹</button>
-      <button class="modal-slider-btn next" onclick="slideModal(1)">›</button>
+      <div class="modal-track" id="modalTrack"></div>
     </div>
+    <button class="modal-slider-btn prev" onclick="slideModal(-1)">‹</button>
+    <button class="modal-slider-btn next" onclick="slideModal(1)">›</button>
     <div class="modal-dots" id="modalDots">
       <div class="mdot active"></div>
       <div class="mdot"></div>
@@ -1694,6 +1681,7 @@
 
   let curM = 0;
   let currentSlides = [];
+  let isSliding = false;
 
   function updateModalContent(idx) {
     const body = document.getElementById('modalBody');
@@ -1705,28 +1693,47 @@
       document.getElementById('modalTitle').textContent = s.title;
       document.getElementById('modalDesc').textContent = s.desc;
       document.getElementById('modalTechs').innerHTML = s.techs.map(t => `<span class="tech-pill">${t}</span>`).join('');
-      // 도트 슬라이드 수에 맞게 동적 생성
       dots.innerHTML = currentSlides.map((_, i) => `<div class="mdot${i === idx ? ' active' : ''}"></div>`).join('');
       body.style.opacity = '1';
     }, 180);
   }
 
+  // 슬라이드 DOM을 복제본 포함해서 재구성
+  // [마지막복제] [0] [1] [2] [첫번째복제] 구조
+  function buildTrack(slides, slideColors) {
+    const track = document.getElementById('modalTrack');
+    const total = slides.length;
+    const colors = slideColors || slides.map((_, i) => ['linear-gradient(135deg,#FF3CAC22,#784BA044)', 'linear-gradient(135deg,#00F5D422,#2B86C544)', 'linear-gradient(135deg,#FFE45E22,#FF3CAC22)'][i % 3]);
+    
+    // 복제본 포함 슬라이드 배열: [last_clone, 0, 1, ..., n-1, first_clone]
+    const allSlides = [slides[total - 1], ...slides, slides[0]];
+    const allColors = [colors[total - 1], ...colors, colors[0]];
+
+    track.innerHTML = allSlides.map((_, i) => {
+      return `<div class="modal-slide" style="background:${allColors[i]}">${String(i).padStart(2,'0')}</div>`;
+    }).join('');
+
+    // transition 없이 index 1 위치(실제 첫 슬라이드)로 이동
+    track.style.transition = 'none';
+    track.style.transform = `translateX(-100%)`;
+  }
+
   let scrollY = 0;
+  let trackColors = [];
 
   function openModal(key) {
     if (!modalData[key]) return;
     currentSlides = modalData[key].slides;
     curM = 0;
 
-    // 슬라이드 초기화
-    const track = document.getElementById('modalTrack');
-    track.style.transition = 'none';
-    track.style.transform = 'translateX(0)';
-    setTimeout(() => { track.style.transition = ''; }, 50);
+    // 각 카드별 색상
+    trackColors = key === 'card1'
+      ? ['linear-gradient(135deg,#FF3CAC22,#784BA044)', 'linear-gradient(135deg,#FFE45E22,#FF3CAC33)', 'linear-gradient(135deg,#784BA022,#FF3CAC44)']
+      : ['linear-gradient(135deg,#00F5D422,#2B86C544)', 'linear-gradient(135deg,#2B86C522,#00F5D444)', 'linear-gradient(135deg,#FFE45E22,#2B86C544)'];
 
+    buildTrack(currentSlides, trackColors);
     updateModalContent(0);
 
-    // 모달 표시
     const modal = document.getElementById('modal');
     modal.style.display = 'flex';
     modal.style.opacity = '0';
@@ -1740,7 +1747,6 @@
       });
     });
 
-    // 스크롤 고정
     scrollY = window.scrollY || window.pageYOffset;
     document.body.style.overflow = 'hidden';
   }
@@ -1759,9 +1765,35 @@
   }
 
   function slideModal(dir) {
-    curM = (curM + dir + currentSlides.length) % currentSlides.length;
-    document.getElementById('modalTrack').style.transform = `translateX(-${curM * 100}%)`;
+    if (isSliding) return;
+    isSliding = true;
+
+    const track = document.getElementById('modalTrack');
+    const total = currentSlides.length;
+
+    // 현재 위치: 실제 슬라이드는 index 1~total, 복제본은 0(last)과 total+1(first)
+    // 화면에 보이는 위치 = curM + 1 (복제본 오프셋)
+    const visibleIdx = curM + 1 + dir; // 이동할 위치 (복제본 포함)
+
+    track.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+    track.style.transform = `translateX(-${visibleIdx * 100}%)`;
+
+    curM = (curM + dir + total) % total;
     updateModalContent(curM);
+
+    setTimeout(() => {
+      // 복제본에 도달했으면 순간이동
+      if (visibleIdx === 0) {
+        // 마지막 복제본 → 실제 마지막으로 순간이동
+        track.style.transition = 'none';
+        track.style.transform = `translateX(-${total * 100}%)`;
+      } else if (visibleIdx === total + 1) {
+        // 첫번째 복제본 → 실제 첫번째로 순간이동
+        track.style.transition = 'none';
+        track.style.transform = `translateX(-100%)`;
+      }
+      isSliding = false;
+    }, 420);
   }
 
   // 터치 스와이프 - 모달 전체 영역에서 감지
