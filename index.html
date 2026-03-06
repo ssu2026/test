@@ -72,7 +72,31 @@
     background: #F0F0EC;
   }
   [data-theme="light"] .modal-backdrop {
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.4);
+  }
+  [data-theme="light"] .modal-close {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.07);
+    color: #999999;
+  }
+  [data-theme="light"] .modal-close:hover {
+    background: rgba(0,0,0,0.08);
+    color: #777777;
+  }
+  [data-theme="light"] .modal-slider-btn {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.07);
+    color: #999999;
+  }
+  [data-theme="light"] .modal-slider-btn:hover {
+    background: rgba(0,0,0,0.08);
+    color: #777777;
+  }
+  [data-theme="light"] .mdot {
+    background: rgba(0,0,0,0.15);
+  }
+  [data-theme="light"] .mdot.active {
+    background: var(--c4);
   }
   [data-theme="light"] .exp-list::before {
     background: linear-gradient(to bottom, var(--c1), var(--c3), transparent);
@@ -1200,6 +1224,16 @@
     .project-card:hover,
     .skill-card:hover,
     .design-card:hover { transform: none; }
+    .theme-toggle:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.12);
+      transform: none;
+    }
+    [data-theme="light"] .theme-toggle:hover {
+      background: rgba(0,0,0,0.04);
+      border-color: rgba(0,0,0,0.1);
+      transform: none;
+    }
   }
 </style>
 </head>
@@ -1571,15 +1605,17 @@
     try { localStorage.setItem('theme', next); } catch(e) {}
   }
 
-  // hover시 반대 이모지 미리보기
-  toggleBtn.addEventListener('mouseenter', () => {
-    const current = html.getAttribute('data-theme');
-    toggleBtn.textContent = current === 'dark' ? '☀️' : '🌙';
-  });
-  toggleBtn.addEventListener('mouseleave', () => {
-    const current = html.getAttribute('data-theme');
-    toggleBtn.textContent = current === 'light' ? '☀️' : '🌙';
-  });
+  // hover시 반대 이모지 미리보기 (터치 기기 제외)
+  if (!('ontouchstart' in window) && navigator.maxTouchPoints === 0) {
+    toggleBtn.addEventListener('mouseenter', () => {
+      const current = html.getAttribute('data-theme');
+      toggleBtn.textContent = current === 'dark' ? '☀️' : '🌙';
+    });
+    toggleBtn.addEventListener('mouseleave', () => {
+      const current = html.getAttribute('data-theme');
+      toggleBtn.textContent = current === 'light' ? '☀️' : '🌙';
+    });
+  }
 
   // Cursor - 터치기기에서 숨김
   const cursor = document.getElementById('cursor');
@@ -1728,20 +1764,30 @@
     updateModalContent(curM);
   }
 
-  // 터치 스와이프 지원
-  const modalTrack = document.getElementById('modalTrack');
-  let touchStartX = 0;
-  let touchEndX = 0;
+  // 터치 스와이프 - 모달 전체 영역에서 감지
+  const modalEl = document.getElementById('modal');
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+  let swipeMoved = false;
 
-  modalTrack.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
+  modalEl.addEventListener('touchstart', (e) => {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeMoved = false;
   }, { passive: true });
 
-  modalTrack.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 40) {
-      slideModal(diff > 0 ? 1 : -1);
+  modalEl.addEventListener('touchmove', (e) => {
+    const dx = Math.abs(e.touches[0].clientX - swipeStartX);
+    const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+    if (dx > dy && dx > 5) swipeMoved = true;
+  }, { passive: true });
+
+  modalEl.addEventListener('touchend', (e) => {
+    const diffX = swipeStartX - e.changedTouches[0].clientX;
+    const diffY = Math.abs(swipeStartY - e.changedTouches[0].clientY);
+    // 가로 스와이프가 세로보다 크고 40px 이상이면 슬라이드
+    if (Math.abs(diffX) > 40 && Math.abs(diffX) > diffY) {
+      slideModal(diffX > 0 ? 1 : -1);
     }
   }, { passive: true });
 
