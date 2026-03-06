@@ -26,6 +26,9 @@
     --surface: #F0F0EC;
     --text: #1A1A1A;
     --muted: #888880;
+    --c4: #0891B2;
+    --c1: #E0008C;
+    --c3: #1A6FAD;
   }
   [data-theme="light"] body {
     background: var(--bg);
@@ -109,19 +112,27 @@
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    transition: background 0.2s, border-color 0.2s, transform 0.3s;
+    transition: background 0.25s, border-color 0.25s, transform 0.3s;
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
   }
+  /* 다크모드 버튼 - hover시 라이트 느낌 */
   .theme-toggle:hover {
-    background: rgba(255,255,255,0.12);
+    background: #FAFAF8;
+    border-color: rgba(0,0,0,0.15);
     transform: rotate(20deg);
   }
+  /* 라이트모드 버튼 - hover시 다크 느낌 */
   [data-theme="light"] .theme-toggle {
     border-color: rgba(0,0,0,0.1);
     background: rgba(0,0,0,0.04);
+    color: #1A1A1A;
   }
   [data-theme="light"] .theme-toggle:hover {
-    background: rgba(0,0,0,0.08);
+    background: #13131A;
+    border-color: rgba(255,255,255,0.15);
+    transform: rotate(20deg);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1244,7 +1255,7 @@
   <div class="about-grid">
     <div class="about-intro-card reveal">
       <div class="about-avatar">👤</div>
-      <div class="about-name">이수연</div>
+      <div class="about-name">Your Name</div>
       <div class="about-role">WEB PUBLISHER & DESIGNER</div>
       <p class="about-bio">
         안녕하세요! 저는 <strong>코드와 디자인 양쪽을 다루는</strong> 개발자 겸 디자이너예요.<br><br>
@@ -1559,6 +1570,16 @@
     toggleBtn.textContent = next === 'light' ? '☀️' : '🌙';
     try { localStorage.setItem('theme', next); } catch(e) {}
   }
+
+  // hover시 반대 이모지 미리보기
+  toggleBtn.addEventListener('mouseenter', () => {
+    const current = html.getAttribute('data-theme');
+    toggleBtn.textContent = current === 'dark' ? '☀️' : '🌙';
+  });
+  toggleBtn.addEventListener('mouseleave', () => {
+    const current = html.getAttribute('data-theme');
+    toggleBtn.textContent = current === 'light' ? '☀️' : '🌙';
+  });
 
   // Cursor - 터치기기에서 숨김
   const cursor = document.getElementById('cursor');
